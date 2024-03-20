@@ -1,0 +1,38 @@
+public class queue<E> implements Queue<E>  {
+    private E[] data; 
+    private int f = 0; 
+    private int sz = 0; 
+
+    public queue() {this (CAPACITY);}
+    public queue(int capacity) {
+        data = (E[]) new Object[capacity]; 
+    }
+
+    public int size() { return sz; }
+    public boolean isEmpty() { return (sz == 0); }
+
+    public void enqueue(E e) throws IllegalStateException { 
+        if (sz == data.length) throw new IllegalStateException("queue is full"); 
+        int avail = (f + sz) % data.length; 
+        data[avail] = e; 
+        sz++; 
+    }
+
+    public E first(){
+        if (isEmpty()) return null; 
+        return data[f]; 
+    }
+
+    public E dequeue(){
+        if (isEmpty()) return null; 
+        E ans = data[f]; 
+        data[f] = null; 
+        f = (f + 1) % data.length; 
+        sz--; 
+        return ans; 
+    }
+
+
+        
+    
+}

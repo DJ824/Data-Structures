@@ -1,0 +1,62 @@
+pushing elements onto the stack:  
+block number: 0 array element number: 0 stack size: 1
+pushed: 1
+block number: 0 array element number: 1 stack size: 2
+pushed: 2
+block number: 0 array element number: 2 stack size: 3
+pushed: 3
+block number: 0 array element number: 3 stack size: 4
+pushed: 4
+block number: 0 array element number: 4 stack size: 5
+pushed: 5
+block number: 0 array element number: 5 stack size: 6
+pushed: 6
+block number: 0 array element number: 6 stack size: 7
+pushed: 7
+block number: 0 array element number: 7 stack size: 8
+pushed: 8
+new node has been created with block number: 1
+block number: 1 array element number: 0 stack size: 9
+pushed: 9
+block number: 1 array element number: 1 stack size: 10
+pushed: 10
+block number: 1 array element number: 2 stack size: 11
+pushed: 11
+block number: 1 array element number: 3 stack size: 12
+pushed: 12
+block number: 1 array element number: 4 stack size: 13
+pushed: 13
+block number: 1 array element number: 5 stack size: 14
+pushed: 14
+block number: 1 array element number: 6 stack size: 15
+pushed: 15
+block number: 1 array element number: 7 stack size: 16
+pushed: 16
+new node has been created with block number: 2
+block number: 2 array element number: 0 stack size: 17
+pushed: 17
+block number: 2 array element number: 1 stack size: 18
+pushed: 18
+block number: 2 array element number: 2 stack size: 19
+pushed: 19
+block number: 2 array element number: 3 stack size: 20
+pushed: 20
+
+current top element: 20
+
+popping elements from the stack 
+new top after pop: 19
+new top after pop: 18
+new top after pop: 17
+block number: 2 has been deleted
+new top after pop: 16
+new top after pop: 15
+
+pushing strings onto the stack: 
+block number: 0 array element number: 0 stack size: 1
+block number: 0 array element number: 1 stack size: 2
+block number: 0 array element number: 2 stack size: 3
+block number: 0 array element number: 3 stack size: 4
+top string: griffin
+popping a string from the stack...
+new top string: ken
