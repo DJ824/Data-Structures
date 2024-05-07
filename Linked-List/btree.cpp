@@ -1,209 +1,319 @@
-#include <cstdlib>
-#include <ctime>
+// Filename: binarytree.cpp
+// Compile command: g++ binarytree.cpp -o binarytree.exe
 
 #include <iostream>
-#include <string>
-#include <utility>
+#include <list>
 
-using std::cout;
-using std::endl;
+using namespace std;
 
-////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////// Node //
-////////////////////////////////////////////////////////////////////////////////
+template <typename Elem>
+class LinkedBinaryTree
+{ // Linked List Binary Tree
 
-struct Node
-{
+protected:
+  template <typename F>
+  class Node
+  { // a node of the tree
 
-  Node() = delete;
-  Node(std::string const& K): _lPtr(nullptr), _rPtr(nullptr), _key(K) {}
+  public:
+    Node() : elt(), par(NULL), left(NULL), right(NULL) {} // constructor
 
-  friend std::ostream& operator<<(std::ostream&, const Node* const);
-  friend std::pair<Node**, bool> Find(std::string const&, Node** const);
-  friend void Erase(Node** const);
-  friend void Clear(const Node* const);
+  private:
+    Elem elt;       // element value
+    Node<F> *par;   // parent
+    Node<F> *left;  // left child
+    Node<F> *right; // right child
 
-private:
+    friend class LinkedBinaryTree;
+  };
 
-  friend Node** FindMin(Node** const);
-  friend Node** FindMax(Node** const);
+public:
+  class Position
+  { // position in the tree
 
-  Node* _lPtr;
-  Node* _rPtr;
-  std::string _key;
+  public:
+    Position(Node<Elem> *_v = NULL) : v(_v) {} // constructor
 
-};
+    Elem &operator*() { return v->elt; } // get element
 
-std::ostream& operator<<(std::ostream& S, const Node* const N)
-// ------ in the subtree with the root N:
-// ------ recursively traverse this subtree with inorder keys output
-{
-  if (N != nullptr) S << '(' << N->_lPtr << N->_key << N->_rPtr << ')';
-  return S;
-}
+    const Elem &value() const { return v->elt; } // get element
 
-std::pair<Node**, bool> Find(std::string const& K, Node** const P)
-// ------ in the subtree with the root *P:
-// ------ if the node with the key K exists, return pointer to pointer to it and the flag 'true',
-// ------ otherwise return pointer to pointer, where the new node should be linked, and the flag 'false'
-{
-  const auto nodePtr = *P;
-  if (nodePtr != nullptr)
-  {
-    if (K < nodePtr->_key)
+    Position left() const { return Position(v->left); } // get left child
+
+    Position right() const { return Position(v->right); } // get right child
+
+    Position parent() const { return Position(v->par); } // get parent
+
+    bool isRoot() const { return v->par == NULL; } // root of the tree?
+
+    bool isExternal() const // an external node?
     {
-      // ------ search in the left subtree
-      return Find(K, &nodePtr->_lPtr);
+      return v->left == NULL && v->right == NULL;
     }
-    else if (K > nodePtr->_key)
-    {
-      // ------ search in the right subtree
-      return Find(K, &nodePtr->_rPtr);
+
+  private:
+    Node<Elem> *v; // pointer to the node
+
+    friend class LinkedBinaryTree; // give tree access
+  };
+
+  typedef std::list<Position> PositionList; // list of positions
+
+public:
+  LinkedBinaryTree() : _root(NULL), n(0) {} // constructor
+
+  int size() const { return n; } // number of nodes
+
+  bool empty() const { return size() == 0; } // is tree empty?
+
+  Position root() const { return Position(_root); } // get the root
+
+  PositionList positions() const
+  { // list of nodes
+    PositionList pl;
+    preorder(_root, pl);
+    //      return PositionList(pl);
+    return pl;
+  };
+
+  void addRoot()
+  {
+    _root = new Node<Elem>;
+    n = 1;
+  }; // add root to empty tree
+
+  void expandExternal(const Position &p); // expand external node
+  void expandExternal(const Position &p,
+                      const Elem &l, const Elem &r);
+
+  Position removeAboveExternal(const Position &p)
+  { // remove p and parent
+
+    Node<Elem> *w = p.v;
+    Node<Elem> *v = w->par; // get p's node and parent
+    Node<Elem> *sib = (w == v->left ? v->right : v->left);
+    if (v == _root)
+    {              // child of root?
+      _root = sib; // ...make sibling root
+      sib->par = NULL;
     }
     else
     {
-      // ------ the node is found: return pointer to it
-      return std::make_pair(P, true);
+      Node<Elem> *gpar = v->par; // w's grandparent
+      if (v == gpar->left)
+        gpar->left = sib; // replace parent by sib
+      else
+        gpar->right = sib;
+      sib->par = gpar;
     }
-  }
-  else
-  {
-    // ------ the node isn't found
-    return std::make_pair(P, false);
-  }
-}
+    delete w;
+    delete v; // delete removed nodes
+    n -= 2;   // two fewer nodes
+    return Position(sib);
+  };
 
-void Erase(Node** const P)
-// ------ in the subtree with the root *P:
-// ------ recursively erase its root
-{
-  const auto nodePtr = *P;
-  if (nodePtr->_lPtr != nullptr && nodePtr->_rPtr != nullptr)
-  {
-    // ------ the node has two children: find the closest node, copy its key and erase it
-    // ------ closest left or right nodes are chosen randomly for symmetry
-    const auto closestPtr = (std::rand() % 2 == 0) ? FindMax(&nodePtr->_lPtr) : FindMin(&nodePtr->_rPtr);
-    nodePtr->_key = (*closestPtr)->_key;
-    Erase(closestPtr);
-  }
-  else if (nodePtr->_lPtr != nullptr)
-  {
-    // ------ the node has only the left child
-    *P = nodePtr->_lPtr;
-    delete nodePtr;
-  }
-  else if (nodePtr->_rPtr != nullptr)
-  {
-    // ------ the node has only the right child
-    *P = nodePtr->_rPtr;
-    delete nodePtr;
-  }
-  else
-  {
-    // ------ the node doesn't have children
-    *P = nullptr;
-    delete nodePtr;
-  }
-}
+  // Tree traversal methods in which "visiting a position (node)" means printing its element.
 
-void Clear(const Node* const N)
-// ------ in the subtree with the root N:
-// ------ recursively erase all this subtree
-{
-  if (N != nullptr)
-  {
-    Clear(N->_lPtr);
-    Clear(N->_rPtr);
-    delete N;
-  }
-}
+  // I have put two versions of each of inOrder, postOrder, and inOrder binary tree traversal.
 
-Node** FindMin(Node** const P)
-// ------ in the subtree with the root *P:
-// ------ return pointer to pointer to the node with a minimal key
-{
-  const auto nodePtr = *P;
-  return (nodePtr->_lPtr != nullptr) ? FindMin(&nodePtr->_lPtr) : P;
-}
+  void preorderPrint(const Position &p) const
+  { // preorder print utility
+    if (p.v)
+    {
 
-Node** FindMax(Node** const P)
-// ------ in the subtree with the root *P:
-// ------ return pointer to pointer to the node with a maximal key
-{
-  const auto nodePtr = *P;
-  return (nodePtr->_rPtr != nullptr) ? FindMax(&nodePtr->_rPtr) : P;
-}
+      cout << p.value() << " "; // Visit the position
 
-////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////// BST //
-////////////////////////////////////////////////////////////////////////////////
+      preorderPrint(p.left()); // Traverse Position's Left Subtree
 
-struct BST
-{
+      preorderPrint(p.right()); // Traverse Position's Right Subtree
+    }
+  };
 
-  BST(): _rootPtr(nullptr) {std::srand(std::time(nullptr));}
-  virtual ~BST() {this->clear();}
+  void preorderPrintv2(const Position &p) const
+  { // preorder print utility
+    if (p.v)
+    {
 
-  friend std::ostream& operator<<(std::ostream&, BST const&);
+      cout << p.value() << " "; // Visit the position
 
-  bool contains(std::string const&) const noexcept;
-  void insert(std::string const&);
-  void erase(std::string const&) noexcept;
-  void clear() noexcept;
+      if (!(p.isExternal()))
+      {
+        preorderPrintv2(p.left());  // Traverse Position's Left Subtre
+        preorderPrintv2(p.right()); // Traverse Position's Right Subtree
+      }
+    }
+  };
+
+  void postorderPrint(const Position &p) const
+  { // postorder print utility
+    if (p.v)
+    {
+
+      postorderPrint(p.left()); // Traverse Position's Left Subtree
+
+      postorderPrint(p.right()); // Traverse Position's Right Subtree
+
+      cout << p.value() << " "; // Visit the position
+    }
+  };
+
+  void postorderPrintv2(const Position &p) const
+  { // postorder print utility
+    if (p.v)
+    {
+
+      if (!(p.isExternal()))
+      {
+        postorderPrintv2(p.left());  // Traverse Position's Left Subtre
+        postorderPrintv2(p.right()); // Traverse Position's Right Subtree
+      }
+
+      cout << p.value() << " "; // Visit the position
+    }
+  };
+
+  void inorderPrint(const Position &p) const
+  { // preorder print utility
+    if (p.v)
+    {
+
+      inorderPrint(p.left()); // Traverse Position's Left Subtree
+
+      cout << p.value() << " "; // Visit the position
+
+      inorderPrint(p.right()); // Traverse Position's Right Subtree
+    }
+  };
+
+  void inorderPrintv2(const Position &p) const
+  { // preorder print utility
+    if (p.v)
+    {
+
+      if (!(p.isExternal()))
+        inorderPrintv2(p.left()); // Traverse Position's Left Subtree
+
+      cout << p.value() << " "; // Visit the position
+      if (!(p.isExternal()))
+        inorderPrintv2(p.right()); // Traverse Position's Right Subtree
+    }
+  };
+
+  // housekeeping functions omitted...
+
+protected:                                              // local utilities
+  void preorder(Node<Elem> *v, PositionList &pl) const; // preorder utility
 
 private:
-
-  Node* _rootPtr;
-
+  Node<Elem> *_root; // pointer to the root
+  int n;             // number of nodes
 };
 
-std::ostream& operator<<(std::ostream& S, BST const& T)
+template <typename Elem> // expand external node
+void LinkedBinaryTree<Elem>::expandExternal(const Position &p)
 {
-  S << T._rootPtr;
-  return S;
+  Node<Elem> *v = p.v;       // p's node
+  v->left = new Node<Elem>;  // add a new left child
+  v->left->par = v;          // v is its parent
+  v->right = new Node<Elem>; // and a new right child
+  v->right->par = v;         // v is its parent
+  n += 2;                    // two more nodes
 }
 
-bool BST::contains(std::string const& K) const noexcept
+template <typename Elem> // expand external node
+void LinkedBinaryTree<Elem>::expandExternal(const Position &p,
+                                            const Elem &l, const Elem &r)
 {
-  return Find(K, const_cast<Node**>(&_rootPtr)).second;
+  Node<Elem> *v = p.v;      // p's node
+  v->left = new Node<Elem>; // add a new left child
+  v->left->par = v;         // v is its parent
+  v->left->elt = l;         // set left child element
+
+  v->right = new Node<Elem>; // and a new right child
+  v->right->par = v;         // v is its parent
+  n += 2;                    // two more nodes
+  v->right->elt = r;         // set right child element
 }
 
-void BST::insert(std::string const& K)
+template <typename Elem>
+void LinkedBinaryTree<Elem>::preorder(Node<Elem> *v, PositionList &pl) const
 {
-  const auto res = Find(K, &_rootPtr);
-  if (not res.second) *res.first = new Node(K);
+  pl.push_back(Position(v));
+
+  if (v->left != NULL)
+    preorder(v->left, pl);
+
+  if (v->right != NULL)
+    preorder(v->right, pl);
 }
 
-void BST::erase(std::string const& K) noexcept
+int main(int argc, const char *argv[])
 {
-  const auto res = Find(K, &_rootPtr);
-  if (res.second) Erase(res.first);
-}
 
-void BST::clear() noexcept
-{
-  Clear(_rootPtr);
-  _rootPtr = nullptr;
-}
+  LinkedBinaryTree<int> t;
 
-////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////// main //
-////////////////////////////////////////////////////////////////////////////////
+  t.addRoot();
 
-int main()
-{
-  BST t;
-  t.insert("50");
-  t.insert("60");
-  t.insert("40");
-  t.insert("45");
-  t.insert("43");
-  t.insert("30");
-  t.insert("35");
-  // ---------------------------- traverse original tree
-  cout << t << endl;
-  // ------------------------------------------------ erase
-  t.erase("50");
-  // ------------------------ traverse after erasure
-  cout << t << endl;
+  LinkedBinaryTree<int>::Position r = t.root(); // Add root and set its value
+  *r = 978;
+
+  t.expandExternal(r, 10, 20); // Add left child and right child
+
+  cout << "Root elem is " << *r << endl;
+  cout << "Left elem is " << (r.left()).value() << endl;
+  cout << "Right elem is " << (r.right()).value() << endl;
+
+  cout << "PreorderPrint:" << endl;
+  t.preorderPrint(t.root());
+  cout << endl;
+
+  cout << "PreorderPrint version 2:" << endl;
+  t.preorderPrintv2(t.root());
+  cout << endl;
+
+  cout << "PostorderPrint:" << endl;
+  t.postorderPrint(t.root());
+  cout << endl;
+
+  cout << "PostorderPrint version 2:" << endl;
+  t.postorderPrintv2(t.root());
+  cout << endl;
+
+  cout << "InorderPrint:" << endl;
+  t.inorderPrint(t.root());
+  cout << endl;
+
+  cout << "InorderPrint version 2:" << endl;
+  t.inorderPrintv2(t.root());
+  cout << endl;
+
+  cout << "Adding nodes 30, 40, 50, 60..." << endl;
+  t.expandExternal(r.left(), 30, 40);  // Add to left subtree
+  t.expandExternal(r.right(), 50, 60); // Add to right subtree
+
+  cout << "PreorderPrint:" << endl;
+  t.preorderPrint(t.root());
+  cout << endl;
+
+  cout << "PreorderPrint version 2:" << endl;
+  t.preorderPrintv2(t.root());
+  cout << endl;
+
+  cout << "PostorderPrint:" << endl;
+  t.postorderPrint(t.root());
+  cout << endl;
+
+  cout << "PostorderPrint version 2:" << endl;
+  t.postorderPrintv2(t.root());
+  cout << endl;
+
+  cout << "InorderPrint:" << endl;
+  t.inorderPrint(t.root());
+  cout << endl;
+
+  cout << "InorderPrint version 2:" << endl;
+  t.inorderPrintv2(t.root());
+  cout << endl;
+
+  return 0;
 }

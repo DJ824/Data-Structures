@@ -52,7 +52,9 @@ void heap::siftdown(int i)
             smallest = left_child;
         }
         else
+        {
             smallest = right_child;
+        }
 
         swap(v[i], v[smallest]);
         i = smallest;
