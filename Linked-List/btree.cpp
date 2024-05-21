@@ -112,95 +112,6 @@ public:
     return Position(sib);
   };
 
-  // Tree traversal methods in which "visiting a position (node)" means printing its element.
-
-  // I have put two versions of each of inOrder, postOrder, and inOrder binary tree traversal.
-
-  void preorderPrint(const Position &p) const
-  { // preorder print utility
-    if (p.v)
-    {
-
-      cout << p.value() << " "; // Visit the position
-
-      preorderPrint(p.left()); // Traverse Position's Left Subtree
-
-      preorderPrint(p.right()); // Traverse Position's Right Subtree
-    }
-  };
-
-  void preorderPrintv2(const Position &p) const
-  { // preorder print utility
-    if (p.v)
-    {
-
-      cout << p.value() << " "; // Visit the position
-
-      if (!(p.isExternal()))
-      {
-        preorderPrintv2(p.left());  // Traverse Position's Left Subtre
-        preorderPrintv2(p.right()); // Traverse Position's Right Subtree
-      }
-    }
-  };
-
-  void postorderPrint(const Position &p) const
-  { // postorder print utility
-    if (p.v)
-    {
-
-      postorderPrint(p.left()); // Traverse Position's Left Subtree
-
-      postorderPrint(p.right()); // Traverse Position's Right Subtree
-
-      cout << p.value() << " "; // Visit the position
-    }
-  };
-
-  void postorderPrintv2(const Position &p) const
-  { // postorder print utility
-    if (p.v)
-    {
-
-      if (!(p.isExternal()))
-      {
-        postorderPrintv2(p.left());  // Traverse Position's Left Subtre
-        postorderPrintv2(p.right()); // Traverse Position's Right Subtree
-      }
-
-      cout << p.value() << " "; // Visit the position
-    }
-  };
-
-  void inorderPrint(const Position &p) const
-  { // preorder print utility
-    if (p.v)
-    {
-
-      inorderPrint(p.left()); // Traverse Position's Left Subtree
-
-      cout << p.value() << " "; // Visit the position
-
-      inorderPrint(p.right()); // Traverse Position's Right Subtree
-    }
-  };
-
-  void inorderPrintv2(const Position &p) const
-  { // preorder print utility
-    if (p.v)
-    {
-
-      if (!(p.isExternal()))
-        inorderPrintv2(p.left()); // Traverse Position's Left Subtree
-
-      cout << p.value() << " "; // Visit the position
-      if (!(p.isExternal()))
-        inorderPrintv2(p.right()); // Traverse Position's Right Subtree
-    }
-  };
-
-  // housekeeping functions omitted...
-
 protected:                                              // local utilities
   void preorder(Node<Elem> *v, PositionList &pl) const; // preorder utility
 
@@ -247,73 +158,70 @@ void LinkedBinaryTree<Elem>::preorder(Node<Elem> *v, PositionList &pl) const
     preorder(v->right, pl);
 }
 
+template <typename Elem>
+std::string LinkedBinaryTree<Elem>::printExpression(const LinkedBinaryTree<char>::Position &p)
+{
+  if (!p.v)
+    return ""; // Check if the position is valid
+
+  // If node is a leaf (external node), just return its value
+  if (p.isExternal())
+  {
+    return std::string(1, *p); // Convert char to string
+  }
+
+  std::string leftExpr = printExpression(p.left());
+  std::string rightExpr = printExpression(p.right());
+
+  // Form the expression with parentheses
+  return "(" + leftExpr + " " + std::string(1, *p) + " " + rightExpr + ")";
+}
+
 int main(int argc, const char *argv[])
 {
+  LinkedBinaryTree<char> exprTree;
 
-  LinkedBinaryTree<int> t;
+  // Initialize the tree and set the root to the main multiplication operator before the '8'
+  exprTree.addRoot();
+  LinkedBinaryTree<char>::Position root = exprTree.root();
+  *root = '*'; // '*' operator
 
-  t.addRoot();
+  // Expand the root for two operands of the multiplication: the complex division expression and '8'
+  exprTree.expandExternal(root, '/', '8'); // '/' is the complex division, '8' is the right operand
 
-  LinkedBinaryTree<int>::Position r = t.root(); // Add root and set its value
-  *r = 978;
+  // Handling the left child of root, which is a division
+  LinkedBinaryTree<char>::Position div = root.left();
+  exprTree.expandExternal(div, '*', '+'); // Left child is '*', right child is '+'
 
-  t.expandExternal(r, 10, 20); // Add left child and right child
+  // Expand the multiplication node in the numerator of division
+  LinkedBinaryTree<char>::Position mult = div.left();
+  exprTree.expandExternal(mult, '+', '-'); // Left child is '+', right child is '-'
 
-  cout << "Root elem is " << *r << endl;
-  cout << "Left elem is " << (r.left()).value() << endl;
-  cout << "Right elem is " << (r.right()).value() << endl;
+  // Define the left plus of numerator (5 + 2)
+  LinkedBinaryTree<char>::Position numLeftPlus = mult.left();
+  exprTree.expandExternal(numLeftPlus, '5', '2');
 
-  cout << "PreorderPrint:" << endl;
-  t.preorderPrint(t.root());
-  cout << endl;
+  // Define the right minus of numerator (2 - 1)
+  LinkedBinaryTree<char>::Position numRightMinus = mult.right();
+  exprTree.expandExternal(numRightMinus, '2', '1');
 
-  cout << "PreorderPrint version 2:" << endl;
-  t.preorderPrintv2(t.root());
-  cout << endl;
+  // Expand the addition node in the denominator of division
+  LinkedBinaryTree<char>::Position add = div.right();
+  exprTree.expandExternal(add, '+', '-'); // Left child is '+', right child is '-'
 
-  cout << "PostorderPrint:" << endl;
-  t.postorderPrint(t.root());
-  cout << endl;
+  // Define the left plus of denominator (2 + 9)
+  LinkedBinaryTree<char>::Position denomLeftPlus = add.left();
+  exprTree.expandExternal(denomLeftPlus, '2', '9');
 
-  cout << "PostorderPrint version 2:" << endl;
-  t.postorderPrintv2(t.root());
-  cout << endl;
+  // Define the right minus of denominator ((7 - 2) - 1)
+  LinkedBinaryTree<char>::Position denomRightMinus = add.right();
+  exprTree.expandExternal(denomRightMinus, '-', '1'); // Left child is '-', right child is '1'
 
-  cout << "InorderPrint:" << endl;
-  t.inorderPrint(t.root());
-  cout << endl;
-
-  cout << "InorderPrint version 2:" << endl;
-  t.inorderPrintv2(t.root());
-  cout << endl;
-
-  cout << "Adding nodes 30, 40, 50, 60..." << endl;
-  t.expandExternal(r.left(), 30, 40);  // Add to left subtree
-  t.expandExternal(r.right(), 50, 60); // Add to right subtree
-
-  cout << "PreorderPrint:" << endl;
-  t.preorderPrint(t.root());
-  cout << endl;
-
-  cout << "PreorderPrint version 2:" << endl;
-  t.preorderPrintv2(t.root());
-  cout << endl;
-
-  cout << "PostorderPrint:" << endl;
-  t.postorderPrint(t.root());
-  cout << endl;
-
-  cout << "PostorderPrint version 2:" << endl;
-  t.postorderPrintv2(t.root());
-  cout << endl;
-
-  cout << "InorderPrint:" << endl;
-  t.inorderPrint(t.root());
-  cout << endl;
-
-  cout << "InorderPrint version 2:" << endl;
-  t.inorderPrintv2(t.root());
-  cout << endl;
+  // Define the left minus in the right subtree of the denominator (7 - 2)
+  LinkedBinaryTree<char>::Position denomRightLeftMinus = denomRightMinus.left();
+  exprTree.expandExternal(denomRightLeftMinus, '7', '2');
 
   return 0;
 }
+
+// (((5+2) ∗ (2−1))/((2+9) + ((7−2)−1)) ∗ 8)

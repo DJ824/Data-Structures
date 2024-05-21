@@ -1,5 +1,5 @@
-// g++ project2.cpp 
-// ./a.out 
+// g++ -o expressionTree JAISWAL_23309392.cpp 
+// ./expressionTree > JAISWAL_23309392.out
 
 #include <iostream>
 #include <list>
@@ -31,7 +31,7 @@ public:
     public:
         Position(Node<Elem> *_v = NULL) : v(_v) {}
         Elem &operator*() { return v->elt; }
-        const Elem &value() const { return v->elt; }./
+        const Elem &value() const { return v->elt; }
         Position left() const { return Position(v->left); }
         Position right() const { return Position(v->right); }
         Position parent() const { return Position(v->par); }
